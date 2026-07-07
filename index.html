@@ -264,13 +264,13 @@
 
     /* ============ GUIDED TOUR ============ */
     .tour-overlay {
-      position: fixed; inset: 0; z-index: 99998; display: none;
+      position: fixed; inset: 0; z-index: 2147483646; display: none;
       background: rgba(0,0,0,.5); backdrop-filter: blur(2px);
     }
     .tour-overlay.active { display: block; }
 
     .tour-tooltip {
-      position: fixed; z-index: 99999;
+      position: fixed; z-index: 2147483647; isolation: isolate;
       background: #fff; border-radius: 14px; padding: 28px 28px 20px;
       box-shadow: 0 12px 48px rgba(0,0,0,.22);
       max-width: 400px; width: calc(100vw - 32px);
@@ -301,7 +301,6 @@
     .tour-spacer { flex: 1; }
 
     .tour-highlight {
-      position: relative; z-index: 100001;
       outline: 3px solid var(--accent2); outline-offset: 6px;
       border-radius: 8px;
       transition: outline .3s ease;
