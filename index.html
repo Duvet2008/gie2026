@@ -265,23 +265,46 @@
     /* ============ GUIDED TOUR ============ */
     .tour-overlay {
       position: fixed; inset: 0; z-index: 99998; display: none;
-      background: rgba(0,0,0,.55);
+      background: rgba(0,0,0,.5); backdrop-filter: blur(2px);
     }
     .tour-overlay.active { display: block; }
+
     .tour-tooltip {
       position: fixed; z-index: 99999;
-      background: #fff; border-radius: 12px; padding: 26px;
-      box-shadow: 0 10px 50px rgba(0,0,0,.22);
-      max-width: 370px; transition: opacity .3s ease; display: none;
+      background: #fff; border-radius: 14px; padding: 28px 28px 20px;
+      box-shadow: 0 12px 48px rgba(0,0,0,.22);
+      max-width: 400px; width: calc(100vw - 32px);
+      transition: opacity .25s ease, top .35s ease, left .35s ease;
+      display: none; opacity: 0;
     }
-    .tour-tooltip h4 { font-size: 1.05rem; margin-bottom: 6px; color: var(--accent); }
-    .tour-tooltip p { font-size: .88rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+    .tour-tooltip.visible { opacity: 1; }
+    .tour-tooltip h4 { font-size: 1.1rem; margin-bottom: 8px; color: var(--accent); padding-right: 24px; }
+    .tour-tooltip p { font-size: .9rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+
+    .tour-close-btn {
+      position: absolute; top: 12px; right: 16px;
+      background: none; border: none; font-size: 1.5rem; cursor: pointer;
+      color: var(--text-muted); padding: 0 4px; line-height: 1;
+    }
+    .tour-close-btn:hover { color: var(--text); }
+
+    /* Step dots */
+    .tour-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+    .tour-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #d1d5db; transition: all .3s ease; cursor: pointer;
+    }
+    .tour-dot.active { background: var(--accent2); width: 24px; border-radius: 4px; }
+    .tour-dot.done { background: var(--accent); }
+
     .tour-actions { display: flex; gap: 10px; align-items: center; }
-    .tour-progress { font-size: .78rem; color: var(--text-muted); margin-left: auto; }
+    .tour-spacer { flex: 1; }
+
     .tour-highlight {
       position: relative; z-index: 100001;
-      outline: 3px solid var(--accent2); outline-offset: 5px;
-      border-radius: 6px;
+      outline: 3px solid var(--accent2); outline-offset: 6px;
+      border-radius: 8px;
+      transition: outline .3s ease;
     }
 
     /* ============ MODAL ============ */
@@ -549,12 +572,15 @@
   <!-- ============ GUIDED TOUR ============ -->
   <div class="tour-overlay" id="tourOverlay"></div>
   <div class="tour-tooltip" id="tourTooltip">
+    <button class="tour-close-btn" id="tourCloseBtn" aria-label="Close tour">&times;</button>
     <h4 id="tourTitle"></h4>
     <p id="tourBody"></p>
+    <div class="tour-dots" id="tourDots"></div>
     <div class="tour-actions">
       <button class="btn btn-ghost" id="tourSkip" data-i18n="tour-skip">Skip</button>
+      <span class="tour-spacer"></span>
+      <button class="btn btn-outline" id="tourBack" data-i18n="tour-back">← Back</button>
       <button class="btn btn-primary" id="tourNext" data-i18n="tour-next">Next →</button>
-      <span class="tour-progress" id="tourProgress"></span>
     </div>
   </div>
 
@@ -672,25 +698,27 @@
     "cta-btn":          { en: "Register Now",            zh: "立即注册" },
     // footer
     "footer-legal":     { en: "Privacy · Terms · All Rights Reserved.", zh: "隐私 · 条款 · 版权所有。" },
-    // tour
+    // tour UI
     "tour-skip":        { en: "Skip",                    zh: "跳过" },
     "tour-next":        { en: "Next →",                  zh: "下一步 →" },
-    "tour-done":        { en: "Got it!",                 zh: "知道了！" },
-    "tour-step0-title": { en: "Welcome to GIE 2026!",    zh: "欢迎来到 GIE 2026！" },
-    "tour-step0-body":  { en: "Let us walk you through the key sections in under a minute. Click Next, or Skip to explore freely.",
-                              zh: "让我们用一分钟带您快速了解页面重点。点击「下一步」开始，或跳过自由浏览。" },
-    "tour-step1-title": { en: "Language Toggle",         zh: "语言切换" },
-    "tour-step1-body":  { en: "Click 中 / EN anytime to switch between Chinese and English — no page reload needed.",
-                              zh: "随时点击「中 / EN」即可在中文和英文之间实时切换，无需刷新页面。" },
-    "tour-step2-title": { en: "Exhibition Highlights",   zh: "展会亮点" },
-    "tour-step2-body":  { en: "Six themed pavilions, keynote stages, and AI-powered B2B matchmaking — all at a glance.",
-                              zh: "六大主题展馆、主论坛舞台和 AI 商务配对——一览无余。" },
-    "tour-step3-title": { en: "Full Agenda",             zh: "完整议程" },
-    "tour-step3-body":  { en: "Browse the three-day programme — keynotes, workshops, networking, and the gala dinner.",
-                              zh: "浏览三天议程——主旨演讲、工作坊、商务社交和晚宴颁奖。" },
-    "tour-step4-title": { en: "Register Now",            zh: "立即注册" },
-    "tour-step4-body":  { en: "Ready to join? Click Register to open the sign-up form and secure your pass today.",
-                              zh: "准备参会？点击注册按钮填写报名表，立即锁定您的入场凭证。" },
+    "tour-done":        { en: "Finish Tour",             zh: "结束导览" },
+    "tour-back":        { en: "← Back",                  zh: "← 上一步" },
+    // tour steps — content about the EXPO, not website instructions
+    "tour-step0-title": { en: "Global Innovation Expo 2026", zh: "2026 全球创新博览会" },
+    "tour-step0-body":  { en: "July 18–20 at Shanghai New International Expo Centre. 500+ exhibitors, 80+ countries, 50K+ attendees — the year's biggest innovation gathering in Asia.",
+                              zh: "7月18–20日，上海新国际博览中心。500+参展商、80+国家、5万+参会者——本年度亚洲最大的创新盛会。" },
+    "tour-step1-title": { en: "Six Themed Pavilions",    zh: "六大主题展馆" },
+    "tour-step1-body":  { en: "Explore AI & Big Data, Green Energy, Smart Manufacturing, BioTech, FinTech, and Future Mobility. Each zone features interactive demos and product launches.",
+                              zh: "涵盖人工智能、绿色能源、智能制造、生物科技、金融科技与未来出行。每个展区都有互动演示和新品发布。" },
+    "tour-step2-title": { en: "Three-Day Programme",     zh: "三天精彩议程" },
+    "tour-step2-body":  { en: "Day 1: Opening Ceremony & Innovation Lab Tour. Day 2: Green Tech Showcase & B2B Matchmaking. Day 3: Sustainability Keynote & Gala Dinner with Awards.",
+                              zh: "第一天：开幕典礼 & 创新实验室参观。第二天：绿色科技路演 & B2B商务对接。第三天：可持续发展论坛 & 颁奖晚宴。" },
+    "tour-step3-title": { en: "Exhibitor Showcase",      zh: "展商风采" },
+    "tour-step3-body":  { en: "From AI robotics to next-gen biotech, 500+ companies will demonstrate their latest breakthroughs. Pre-schedule meetings via our AI matchmaking platform.",
+                              zh: "从AI机器臂到下一代生物技术，500+企业将展示最新突破。可通过AI商务配对平台提前预约一对一洽谈。" },
+    "tour-step4-title": { en: "Register Now – Free Entry", zh: "立即注册 – 免费参会" },
+    "tour-step4-body":  { en: "Early-bird registration closes June 30. Secure your pass now and receive the full exhibitor catalogue in advance. We'll see you in Shanghai!",
+                              zh: "早鸟注册6月30日截止。现在锁定席位，可提前获取完整参展商名录。我们上海见！" },
     // modal
     "modal-title":      { en: "Register for GIE 2026",   zh: "注册 GIE 2026" },
     "modal-desc":       { en: "Fill in your details and we will send you a confirmation within 24 hours.",
@@ -705,17 +733,18 @@
   let tourActive = false;
   let tourStep = 0;
 
+  // Tour targets — each step highlights a relevant expo content section
   const tourTargets = [
-    null,                // step 0 – intro (center screen)
-    '#langSwitch',       // step 1
-    '#highlights',       // step 2
-    '#schedule',         // step 3
-    '#btnOpenReg',       // step 4
+    null,                // step 0 — overview (centered, no highlight)
+    '#highlights',       // step 1 — six themed pavilions
+    '#schedule',         // step 2 — three-day agenda
+    '#exhibitors',       // step 3 — exhibitor showcase
+    '#register',         // step 4 — registration CTA
   ];
   const totalSteps = tourTargets.length;
 
   // ─────────────────────────────────────
-  //  apply translations
+  //  Apply translations
   // ─────────────────────────────────────
   function applyLang(lang) {
     document.documentElement.lang = lang;
@@ -725,14 +754,13 @@
         el.textContent = dict[key][lang];
       }
     });
-    // update the two pills
     document.querySelectorAll('.lang-opt').forEach(o => {
       o.classList.toggle('active', o.dataset.lang === lang);
     });
   }
 
   // ─────────────────────────────────────
-  //  Language toggle  (the bug-fix version)
+  //  Language toggle
   // ─────────────────────────────────────
   document.getElementById('langSwitch').addEventListener('click', function(e) {
     e.stopPropagation();
@@ -768,49 +796,114 @@
   document.querySelectorAll('.animate-in').forEach(el => observer.observe(el));
 
   // ─────────────────────────────────────
-  //  Guided Tour
+  //  Guided Tour — expo content walkthrough
   // ─────────────────────────────────────
-  const overlay   = document.getElementById('tourOverlay');
-  const tooltip   = document.getElementById('tourTooltip');
-  const tourTitle = document.getElementById('tourTitle');
-  const tourBody  = document.getElementById('tourBody');
-  const tourNext  = document.getElementById('tourNext');
-  const tourSkip  = document.getElementById('tourSkip');
-  const tourProg  = document.getElementById('tourProgress');
+  const overlay    = document.getElementById('tourOverlay');
+  const tooltip    = document.getElementById('tourTooltip');
+  const tourTitle  = document.getElementById('tourTitle');
+  const tourBody   = document.getElementById('tourBody');
+  const tourNext   = document.getElementById('tourNext');
+  const tourBack   = document.getElementById('tourBack');
+  const tourSkip   = document.getElementById('tourSkip');
+  const tourDots   = document.getElementById('tourDots');
+  const tourClose  = document.getElementById('tourCloseBtn');
+  let repositionTimer = null;
+
+  // Build dot indicators
+  function buildDots(activeIdx) {
+    let html = '';
+    for (let i = 0; i < totalSteps; i++) {
+      let cls = 'tour-dot';
+      if (i === activeIdx) cls += ' active';
+      else if (i < activeIdx) cls += ' done';
+      html += `<span class="${cls}" data-step="${i}"></span>`;
+    }
+    tourDots.innerHTML = html;
+  }
+
+  // Position the tooltip relative to target or center
+  function positionTooltip(step) {
+    if (step === 0) {
+      tooltip.style.top  = '50%';
+      tooltip.style.left = '50%';
+      tooltip.style.transform = 'translate(-50%,-50%)';
+      return;
+    }
+    const target = document.querySelector(tourTargets[step]);
+    if (!target) return;
+
+    const rect  = target.getBoundingClientRect();
+    const tipW  = 400;       // max-width of tooltip
+    const gap   = 16;
+    const padding = 16;
+
+    // Horizontal: center on target, clamp inside viewport
+    let left = rect.left + rect.width / 2 - tipW / 2;
+    left = Math.max(padding, Math.min(left, window.innerWidth - tipW - padding));
+
+    // Vertical: prefer below the target; flip above if not enough room
+    const spaceBelow = window.innerHeight - rect.bottom - gap;
+    const spaceAbove = rect.top - gap;
+    let top;
+    if (spaceBelow >= 200 || spaceBelow >= spaceAbove) {
+      top = rect.bottom + gap;
+    } else {
+      top = rect.top - gap;  // will be bottom-aligned by transform below
+    }
+
+    // If tooltip would overflow bottom, pin it
+    const approxH = 220; // estimated tooltip height
+    if (top + approxH > window.innerHeight - padding) {
+      top = window.innerHeight - approxH - padding;
+    }
+    if (top < padding) top = padding;
+
+    tooltip.style.top  = top + 'px';
+    tooltip.style.left = left + 'px';
+    tooltip.style.transform = 'none';
+  }
 
   function renderTourStep(step) {
     const lang = currentLang;
     tourTitle.textContent = dict[`tour-step${step}-title`][lang];
     tourBody.textContent  = dict[`tour-step${step}-body`][lang];
-    tourNext.textContent  = (step === totalSteps - 1)
+
+    // Update button labels
+    tourNext.textContent = (step === totalSteps - 1)
       ? dict['tour-done'][lang]
       : dict['tour-next'][lang];
-    tourProg.textContent  = `${step + 1} / ${totalSteps}`;
+    tourBack.style.visibility = (step === 0) ? 'hidden' : 'visible';
+    tourBack.textContent = dict['tour-back'][lang];
+
+    // Update dots
+    buildDots(step);
 
     // Clear previous highlight
     document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
 
-    if (step === 0) {
-      tooltip.style.top  = '50%';
-      tooltip.style.left = '50%';
-      tooltip.style.transform = 'translate(-50%,-50%)';
-    } else {
+    // Scroll to target and highlight
+    if (step !== 0) {
       const target = document.querySelector(tourTargets[step]);
       if (target) {
         target.classList.add('tour-highlight');
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => {
-          const rect = target.getBoundingClientRect();
-          const tipW = 370;
-          let left = rect.left + rect.width/2 - tipW/2;
-          left = Math.max(12, Math.min(left, window.innerWidth - tipW - 12));
-          const top = Math.min(rect.bottom + 14, window.innerHeight - 220);
-          tooltip.style.top  = top + 'px';
-          tooltip.style.left = left + 'px';
-          tooltip.style.transform = 'none';
-        }, 350);
       }
     }
+
+    // Position after scroll settles — use multiple attempts
+    clearTimeout(repositionTimer);
+    const attempt = (tries) => {
+      positionTooltip(step);
+      if (tries > 0) {
+        repositionTimer = setTimeout(() => attempt(tries - 1), 100);
+      }
+    };
+    attempt(5); // retry up to 5 times over 500ms to catch scroll finish
+
+    // Fade in
+    requestAnimationFrame(() => {
+      tooltip.classList.add('visible');
+    });
   }
 
   function startTour() {
@@ -818,34 +911,71 @@
     tourStep = 0;
     overlay.classList.add('active');
     tooltip.style.display = 'block';
+    tooltip.classList.remove('visible');
     renderTourStep(0);
+    document.body.style.overflow = 'hidden';
   }
 
   function endTour() {
     tourActive = false;
     overlay.classList.remove('active');
     tooltip.style.display = 'none';
+    tooltip.classList.remove('visible');
     document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    clearTimeout(repositionTimer);
+    document.body.style.overflow = '';
   }
 
   function advanceTour() {
     if (tourStep < totalSteps - 1) {
       tourStep++;
+      tooltip.classList.remove('visible');
       renderTourStep(tourStep);
     } else {
       endTour();
     }
   }
 
+  function retreatTour() {
+    if (tourStep > 0) {
+      tourStep--;
+      tooltip.classList.remove('visible');
+      renderTourStep(tourStep);
+    }
+  }
+
+  // Event listeners
   document.getElementById('btnTour').addEventListener('click', startTour);
   tourNext.addEventListener('click', advanceTour);
+  tourBack.addEventListener('click', retreatTour);
   tourSkip.addEventListener('click', endTour);
+  tourClose.addEventListener('click', endTour);
   overlay.addEventListener('click', endTour);
 
+  // Dot click navigation
+  tourDots.addEventListener('click', (e) => {
+    const dot = e.target.closest('.tour-dot');
+    if (!dot || !tourActive) return;
+    const step = parseInt(dot.dataset.step, 10);
+    if (step === tourStep) return;
+    tourStep = step;
+    tooltip.classList.remove('visible');
+    renderTourStep(tourStep);
+  });
+
+  // Keyboard nav
   document.addEventListener('keydown', (e) => {
     if (!tourActive) return;
-    if (e.key === 'Escape')       endTour();
-    if (e.key === 'ArrowRight' || e.key === 'Enter') advanceTour();
+    if (e.key === 'Escape')       { endTour(); }
+    if (e.key === 'ArrowRight')   { advanceTour(); }
+    if (e.key === 'ArrowLeft')    { retreatTour(); }
+  });
+
+  // Reposition on window resize
+  window.addEventListener('resize', () => {
+    if (!tourActive) return;
+    clearTimeout(repositionTimer);
+    repositionTimer = setTimeout(() => positionTooltip(tourStep), 150);
   });
 
   // ─────────────────────────────────────
